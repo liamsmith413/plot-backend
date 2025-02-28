@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 // Define the interface for the Auth document (Admin User)
-interface IAuth extends Document {
+export interface IAuth extends Document {
     id: string;
     email: string;
     verified_email: boolean;
@@ -10,7 +10,10 @@ interface IAuth extends Document {
     family_name: string;
     picture: string;
     isAdmin: boolean;  // New field to distinguish admin users
-    walletAddress: string;
+    defaultAdminWallet: string;
+    notificationEmail: string;
+    notificationEnabled: boolean;
+    autoApprove: boolean;
 }
 
 // Define the auth schema
@@ -24,7 +27,10 @@ const authSchema: Schema<IAuth> = new Schema(
         family_name: { type: String, },
         picture: { type: String },
         isAdmin: { type: Boolean, default: false },  // Default is false, but can be set to true for admin
-        walletAddress: { type: String }
+        defaultAdminWallet: { type: String },
+        notificationEmail: { type: String },
+        notificationEnabled: { type: Boolean, default: false },
+        autoApprove: { type: Boolean, default: false }
     },
     { timestamps: true }
 );

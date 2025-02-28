@@ -5,6 +5,8 @@ import Auth from '../models/Auth';
 import { logger } from '../config/logger';
 import { config } from 'dotenv-safe';
 
+import { IAuth } from '../models/Auth';
+
 config();
 
 const oauth2Client = new google.auth.OAuth2(
@@ -80,8 +82,17 @@ export const getUserProfile = async (req: Request, res: Response): Promise<void>
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || '');
-        res.json(decoded);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || '') as jwt.JwtPayload & { userInfo: { email: string } };
+        const user = await Auth.findOne({ email: decoded.userInfo.email });
+
+        if (!user) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+
+        const { autoApprove, notificationEmail, notificationEnabled, defaultAdminWallet } = user;
+
+        res.json({ ...decoded, autoApprove, notificationEmail, notificationEnabled, defaultAdminWallet });
     } catch (error) {
         logger.error('JWT Verification Error', error);
         res.status(401).json({ message: 'Invalid token' });
@@ -100,45 +111,44 @@ export const logout = (req: Request, res: Response) => {
 };
 
 
-export const updateProfile = async (req: Request, res: Response): Promise<void> => {
-    const token = req.cookies.token;
+interface AuthRequest extends Request {
+    user?: any; // Extending request object to include user from authMiddleware
+}
 
-    if (!token) {
-        res.status(401).json({ message: 'Unauthorized' });
-        return;
-    }
-
+export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string, email: string };
-        const updatedProfileData: Partial<any> = req.body;
-
-        // Input validation (more robust)
-        if (Object.keys(updatedProfileData).length === 0) {
-            res.status(400).json({ message: 'No update data provided' });
-            return;
-        }
-        if (updatedProfileData.email || updatedProfileData.isAdmin || updatedProfileData._id) {
-            res.status(400).json({ message: 'Cannot update email, isAdmin or _id' });
+        if (!req.user?.userInfo?.email) {
+            res.status(401).json({ message: "Unauthorized: No user found in request" });
             return;
         }
 
-        // Wallet Address Validation (Example - Adapt to your needs)
-        if (updatedProfileData.walletAddress && typeof updatedProfileData.walletAddress !== 'string') {
-            res.status(400).json({ message: 'Invalid wallet address format' });
+        const email = req.user.userInfo.email;
+        const updateFields = ["defaultAdminWallet", "notificationEmail", "notificationEnabled", "autoApprove"];
+        const updates: Partial<IAuth> = {};
+
+        // Filter out only the provided fields
+        updateFields.forEach((field) => {
+            if (req.body[field] !== undefined) updates[field as keyof IAuth] = req.body[field];
+        });
+
+        if (Object.keys(updates).length === 0) {
+            res.status(400).json({ message: "At least one field must be provided for an update" });
             return;
         }
-        // Add more specific wallet address validation (e.g., length, allowed characters)
 
-        // Create and send temp token
-        const tempToken = jwt.sign(
-            { email: decoded.email, updatedProfile: updatedProfileData },
-            process.env.JWT_SECRET!,
-            { expiresIn: '5m' }
-        );
-        res.status(401).json({ message: 'Re-authentication required', reauth: true, tempToken });
+        const updatedUser = await Auth.findOneAndUpdate({ email }, { $set: updates }, { new: true, runValidators: true });
+
+        if (!updatedUser) {
+            res.status(404).json({ message: "User not found" });
+            return;
+        }
+
+        res.json({ message: "Profile updated successfully", user: updatedUser });
 
     } catch (error) {
-        logger.error('Error updating profile:', error);
-        res.status(500).json({ message: 'Failed to update profile' });
+        console.error("Error updating profile:", error);
+        res.status(500).json({ message: "Internal Server Error" });
     }
 };
+
+
