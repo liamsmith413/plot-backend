@@ -9,6 +9,7 @@ import plotRoutes from './routes/plotRoutes';
 import transactionRoutes from './routes/transactionRoutes';
 import userRoutes from './routes/userRoutes';
 import authRoutes from './routes/authRoutes';
+import { createFirstAdmin } from './config/createFirstAdmin';
 
 const app = express();
 
@@ -17,7 +18,7 @@ app.use(express.json());
 // Allow requests from your frontend (localhost:8080) and support credentials
 app.use(
     cors({
-        origin: "http://localhost:8080",    // The exact origin of your frontend
+        origin: process.env.CLIENT_URL,    // The exact origin of your frontend
         methods: "GET,POST,PUT,DELETE",     // Allowed HTTP methods
         allowedHeaders: "Content-Type,Authorization",  // Allowed headers
         credentials: true,                  // Allow credentials (cookies, authorization headers)
@@ -27,6 +28,8 @@ app.use(cookieParser());
 app.use(compression());
 app.use(helmet());
 app.use(morgan('dev'));
+
+createFirstAdmin();
 
 // Routes
 app.use('/api/plots', plotRoutes);
