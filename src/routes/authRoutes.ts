@@ -3,6 +3,7 @@ import { Router, Request, Response } from 'express';
 import { google, oauth2_v2 } from 'googleapis';
 import { config } from 'dotenv-safe';
 import Auth from '../models/Auth';
+import { logger } from '../config/logger';
 
 config();
 
@@ -23,10 +24,19 @@ router.get('/google', (req: Request, res: Response) => {
 });
 
 router.get('/google/callback', async (req: Request, res: Response): Promise<void> => {
-    const { code } = req.query;
+    const { code, error, error_description } = req.query;
+    const ip = req.ip || req.headers['x-forwarded-for'] || ''; // Get user IP address
+    const userAgent = req.headers['user-agent'] || ''; // Get user agent (browser/device info)
+
+    // Handle the case where the user clicked "Cancel" or an error occurred
+    if (error) {
+        logger.warn(`Google OAuth canceled or error occurred. Error: ${error}, Description: ${error_description}. IP: ${ip}, User-Agent: ${userAgent}`);
+        return res.redirect(process.env.CLIENT_URL || 'http://localhost:5173');
+    }
 
     // Early return for missing code
     if (!code) {
+        logger.warn(`No code provided in the callback request. IP: ${ip}, User-Agent: ${userAgent}`);
         res.status(400).json({ error: 'No code provided' });
         return;
     }
@@ -39,8 +49,9 @@ router.get('/google/callback', async (req: Request, res: Response): Promise<void
 
         // Find user and check admin status
         const user = await Auth.findOne({ email: userInfo.data.email });
+
         if (!user) {
-            console.error('User not found:', userInfo.data.email);
+            logger.error(`No user found for email: ${userInfo.data.email}. IP: ${ip}, User-Agent: ${userAgent}`);
             res.status(404).json({ error: 'User not found' });
             return;
         }
@@ -49,7 +60,7 @@ router.get('/google/callback', async (req: Request, res: Response): Promise<void
 
         // Handle unauthorized login attempt
         if (!isAdmin) {
-            console.error('Unauthorized login attempt:', userInfo.data.email);
+            logger.error(`Unauthorized login attempt by user with email: ${userInfo.data.email}. IP: ${ip}, User-Agent: ${userAgent}`);
             res.status(403).json({ error: 'Unauthorized' });
             return;
         }
@@ -62,18 +73,20 @@ router.get('/google/callback', async (req: Request, res: Response): Promise<void
         // Send token in cookie
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
-            sameSite: 'lax', // Mitigate CSRF attacks
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
         });
 
         // Redirect to frontend
         return res.redirect(process.env.CLIENT_URL || 'http://localhost:5173');
     } catch (error) {
-        console.error('Error during Google callback:', error);
+        const errorMessage = (error as Error).message;
+        logger.error(`Error during Google callback: ${errorMessage}. IP: ${ip}, User-Agent: ${userAgent}`);
         res.status(500).send('Authentication failed.');
         return;
     }
 });
+
 
 
 router.get('/me', (req: Request, res: Response): void => {
