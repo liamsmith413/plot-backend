@@ -15,7 +15,7 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-// Allow requests from your frontend (localhost:8080) and support credentials
+// Allow requests from your frontend and support credentials
 app.use(
     cors({
         origin: process.env.CLIENT_URL,    // The exact origin of your frontend
@@ -29,6 +29,7 @@ app.use(compression());
 app.use(helmet());
 app.use(morgan('dev'));
 
+// Create the first admin user
 createFirstAdmin();
 
 // Routes

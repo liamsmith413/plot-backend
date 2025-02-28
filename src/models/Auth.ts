@@ -10,21 +10,19 @@ interface IAuth extends Document {
     family_name: string;
     picture: string;
     isAdmin: boolean;  // New field to distinguish admin users
-    password: string;  // Admin user password for authentication
 }
 
 // Define the auth schema
 const authSchema: Schema<IAuth> = new Schema(
     {
-        id: { type: String, required: true, unique: true },
+        id: { type: String, unique: true },
         email: { type: String, required: true, unique: true },
-        verified_email: { type: Boolean, required: true },
-        name: { type: String, required: true },
-        given_name: { type: String, required: true },
-        family_name: { type: String, required: true },
-        picture: { type: String, required: true },
+        verified_email: { type: Boolean, },
+        name: { type: String, },
+        given_name: { type: String, },
+        family_name: { type: String, },
+        picture: { type: String },
         isAdmin: { type: Boolean, default: false },  // Default is false, but can be set to true for admin
-        password: { type: String, required: true },  // Required for admin authentication
     },
     { timestamps: true }
 );
