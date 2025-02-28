@@ -2,6 +2,7 @@ import express from 'express';
 import compression from 'compression';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 
 import plotRoutes from './routes/plotRoutes';
 import transactionRoutes from './routes/transactionRoutes';
