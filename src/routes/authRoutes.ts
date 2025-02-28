@@ -106,9 +106,17 @@ router.get('/me', (req: Request, res: Response): void => {
 });
 
 router.get('/logout', (req, res) => {
-    res.clearCookie('token');
-    res.status(200).json({ message: 'Logged out' });
+    // Clear the JWT cookie (ensure options match when setting the cookie)
+    res.clearCookie('token', {
+        httpOnly: true,  // Ensure it's only accessible via HTTP requests (not JavaScript)
+        secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
+        sameSite: 'lax',  // Mitigate CSRF attacks
+    });
+
+    // Return a success response
+    res.status(200).json({ message: 'Logged out successfully' });
 });
+
 
 
 export default router;
