@@ -19,6 +19,7 @@ interface IPlot extends Document {
     next_remote_drive: Date;
     secret_key: string;
     total_earned: number;
+    image: string;
 }
 
 const plotSchema: Schema = new Schema({
@@ -39,7 +40,7 @@ const plotSchema: Schema = new Schema({
     next_remote_drive: { type: Date, required: true },
     secret_key: { type: String, required: true },
     total_earned: { type: Number, required: true },
-    imagePath: { type: String, required: true }
+    image: { type: String, required: true }
 });
 
 export default mongoose.model<IPlot>('Plot', plotSchema);

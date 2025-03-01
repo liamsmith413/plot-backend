@@ -7,8 +7,8 @@ const router = Router();
 
 router.get('/', getPlots);
 router.get('/:id', getPlotById);
-router.post('/', upload, createPlot);
-router.put('/:id', upload, updatePlot);
+router.post('/', createPlot);
+router.put('/:id', updatePlot);
 router.delete('/:id', deletePlot);
 
 export default router;

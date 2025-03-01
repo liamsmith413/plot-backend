@@ -26,14 +26,6 @@ export const getPlotById = async (req: Request, res: Response): Promise<any> => 
 
 export const createPlot = async (req: Request, res: Response): Promise<any> => {
     try {
-        // Ensure the file was uploaded
-        if (!req.file) {
-            return res.status(400).json({ message: 'Image is required' });
-        }
-
-        // Set the image path in the body
-        req.body.imagePath = req.file.filename;
-
         // Create and save the new plot
         const newPlot = new Plot(req.body);
         await newPlot.save();
@@ -50,9 +42,6 @@ export const createPlot = async (req: Request, res: Response): Promise<any> => {
 
 export const updatePlot = async (req: Request, res: Response): Promise<any> => {
     try {
-        if (req.file) {
-            req.body.imagePath = req.file.filename;
-        }
         const plot = await Plot.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!plot) {
             return res.status(404).json({ message: 'Plot not found' });
