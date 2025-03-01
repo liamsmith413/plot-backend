@@ -6,6 +6,8 @@ import { logger } from '../config/logger';
 import { config } from 'dotenv-safe';
 
 import { IAuth } from '../models/Auth';
+import { generateOTP, verifyOTP } from '../services/otpService';
+import { sendOTPEmail } from '../services/emailService';
 
 config();
 
@@ -152,3 +154,19 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 };
 
 
+export const generateOTPCode = async (req: Request, res: Response): Promise<void> => {
+    const { email } = req.body;
+    const otp = generateOTP(email);
+    await sendOTPEmail(email, otp); // Send OTP to user via email
+    res.json({ message: 'OTP sent to your email' });
+}
+
+export const verifyOTPCode = async (req: Request, res: Response): Promise<void> => {
+    const { email, otp } = req.body;
+    const isValid = verifyOTP(email, otp);
+    if (isValid) {
+        res.json({ message: 'OTP is valid' });
+    } else {
+        res.status(400).json({ message: 'Invalid OTP' });
+    }
+}
