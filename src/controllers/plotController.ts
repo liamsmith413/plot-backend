@@ -42,7 +42,7 @@ export const createPlot = async (req: Request, res: Response): Promise<any> => {
 
 export const updatePlot = async (req: Request, res: Response): Promise<any> => {
     try {
-        const plot = await Plot.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const plot = await Plot.findOneAndUpdate({ plot_id: req.params.id }, req.body, { new: true });
         if (!plot) {
             return res.status(404).json({ message: 'Plot not found' });
         }
@@ -55,7 +55,7 @@ export const updatePlot = async (req: Request, res: Response): Promise<any> => {
 
 export const deletePlot = async (req: Request, res: Response): Promise<any> => {
     try {
-        const plot = await Plot.findByIdAndDelete(req.params.id);
+        const plot = await Plot.findOneAndDelete({ plot_id: req.params.id });
         if (!plot) {
             return res.status(404).json({ message: 'Plot not found' });
         }
